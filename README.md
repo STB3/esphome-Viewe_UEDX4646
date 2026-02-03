@@ -25,8 +25,7 @@ Complete ESPHome configuration for the **VIEWE UEDX46460015** 1.43" round AMOLED
 ## 🚀 Quick Start
 
 ### 1. Hardware
-- ESP32-S3 based module with 8MB PSRAM
-- VIEWE Smart Display UEDX46460015
+- VIEWE Smart Display UEDX46460015 (ESP32-S3 based module with 8MB PSRAM)
 
 ### 2. Flash Configuration
 ```bash
