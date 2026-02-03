@@ -31,7 +31,7 @@ Complete ESPHome configuration for the **VIEWE UEDX46460015** 1.43" round AMOLED
 ### 2. Flash Configuration
 ```bash
 # Clone this repository
-git clone https://github.com/yourusername/viewe-display-esphome.git
+git clone https://github.com/STB3/esphome-Viewe_UEDX4646
 cd viewe-display-esphome
 
 # Edit WiFi credentials in viewe-uedx46460015-example.yaml
@@ -114,8 +114,7 @@ GPIO17 powers the **entire LCD module**, not just a backlight. Must be HIGH befo
 ## 📖 Documentation
 
 - [ESPHome mipi_spi Docs](https://esphome.io/components/display/mipi_spi/) - Official display driver documentation
-- [CO5300 Datasheet](https://www.chiponeic.com/) - Display controller specifications
-
+- [Viewsmart GitHub] (https://github.com/VIEWESMART/UEDX46460015-MD50ESP32-1.5inch-Touch-Knob-Display/tree/main)
 ---
 
 ## 🤝 Contributing
