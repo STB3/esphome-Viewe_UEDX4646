@@ -1,0 +1,294 @@
+# VIEWE Smart Display UEDX46460015 - ESPHome Configuration
+# 1.43" Round AMOLED Display (466x466) with Touch & Rotary Encoder
+#
+# BEFORE USING: Replace these values with your own:
+# - wifi_ssid: "YourWiFiName"
+# - wifi_password: "YourWiFiPassword"
+#
+# All other settings are ready to use!
+
+substitutions:
+  device_name: viewe-display
+  friendly_name: "VIEWE Display"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: 600
+    then:
+      # CRITICAL: Power on LCD module via GPIO17
+      # This pin powers the entire display - must be HIGH before display init
+      - lambda: |-
+          gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT);
+          gpio_set_level(GPIO_NUM_17, 1);
+          ESP_LOGI("display", "LCD power enabled (GPIO17 HIGH)");
+      - delay: 100ms
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+# Enable PSRAM (required for display buffer)
+psram:
+  mode: octal
+  speed: 80MHz
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+# api:
+
+# Enable OTA updates
+ota:
+  - platform: esphome
+
+# Enable webserver
+web_server:
+  version: 3
+  port: 80  
+  include_internal: true     # exposes internal handlers  
+
+# WiFi configuration
+# CHANGE THESE to your WiFi credentials:
+wifi:
+  ssid: "YourWiFiName"           # ← Change this
+  password: "YourWiFiPassword"   # ← Change this
+  
+  ap:
+    ssid: "${friendly_name} Hotspot"
+
+
+# QSPI bus for display
+spi:
+  id: display_qspi
+  type: quad
+  clk_pin: GPIO10
+  data_pins: [GPIO13, GPIO11, GPIO14, GPIO9]
+
+# I2C bus for touch controller
+i2c:
+  sda: GPIO1
+  scl: GPIO3
+  id: touch_i2c
+
+# Display configuration
+display:
+  - platform: mipi_spi
+    id: main_display
+    model: CO5300
+    reset_pin: GPIO8
+    cs_pin: GPIO12
+    bus_mode: quad
+    brightness: 192  # 0-255, default 75% brightness
+    dimensions:
+      height: 466
+      width: 466
+      offset_height: 0
+      offset_width: 6  # UE015WV-RB24-A021A has 6-pixel horizontal offset
+    color_depth: 16
+    buffer_size: 100%  # Full buffer for smooth rendering
+    update_interval: 100ms
+
+    # Display initialization sequence
+    init_sequence:
+      - [ 0xD0, 0x07, 0x42, 0x18]  # Gamma correction positive
+      - delay 10ms
+      - [ 0xD1, 0x00, 0x07, 0x10]  # Gamma correction negative
+      - delay 10ms
+    
+    # Simple demonstration UI
+    lambda: |-
+      // Display constants for 466x466 round display
+      const int center_x = 233;
+      const int center_y = 233;
+      const int radius = 233;
+      
+      // Clear screen
+      it.fill(Color(0, 0, 0));  // Black background
+      
+      // Draw circular boundary (optional, for visualization)
+      it.circle(center_x, center_y, radius - 2, Color(255, 255, 255));
+      
+      // Title
+      it.print(center_x, 50, id(font_title), Color(255, 0, 0), TextAlign::TOP_CENTER, "VIEWE Display");
+      it.print(center_x, 85, id(font_small), Color(0, 255, 0), TextAlign::TOP_CENTER, "UEDX46460015");
+      
+      // Display specs
+      it.print(center_x, 130, id(font_medium), Color(0, 0, 255), TextAlign::TOP_CENTER, "466x466 AMOLED");
+      it.print(center_x, 160, id(font_small), Color(255, 255, 255), TextAlign::TOP_CENTER, "CO5300 Controller");
+      
+      // Brightness indicator
+      float brightness = id(display_brightness).state;
+      char brightness_text[32];
+      snprintf(brightness_text, sizeof(brightness_text), "Brightness: %.0f%%", (brightness / 255.0) * 100);
+      it.print(center_x, 210, id(font_medium), Color(255, 255, 255), TextAlign::TOP_CENTER, brightness_text);
+      
+      // Draw brightness arc (0-360° around edge)
+      int arc_radius = 225;
+      int arc_degrees = (int)((brightness / 255.0) * 360.0);
+      for (int deg = 0; deg < arc_degrees; deg += 2) {
+        float angle_rad = (deg - 90) * 3.14159 / 180.0;
+        for (int r = 0; r < 8; r++) {
+          int x = center_x + (arc_radius - r) * cos(angle_rad);
+          int y = center_y + (arc_radius - r) * sin(angle_rad);
+          it.draw_pixel_at(x, y, Color(255, 255, 255));
+        }
+      }
+      
+      // Button state
+      if (id(hw_button).state) {
+        it.print(center_x, 270, id(font_medium), Color(255, 255, 255), TextAlign::TOP_CENTER, "Button: Pressed");
+      } else {
+        it.print(center_x, 270, id(font_medium), Color(255, 255, 255), TextAlign::TOP_CENTER, "Button: Released");
+      }
+      
+      // Touch indicator
+      if (id(touch_active)) {
+        char touch_text[64];
+        snprintf(touch_text, sizeof(touch_text), "Touch: %d, %d", id(last_touch_x), id(last_touch_y));
+        it.print(center_x, 310, id(font_medium), Color(255, 255, 255), TextAlign::TOP_CENTER, touch_text);
+        
+        // Draw yellow circle at touch point for visual feedback
+        int tx = id(last_touch_x);
+        int ty = id(last_touch_y);
+        it.filled_circle(tx, ty, 8, Color(255, 255, 0));   // Yellow filled circle
+        it.circle(tx, ty, 12, Color(255, 255, 0));         // Yellow outer ring
+      } else {
+        it.print(center_x, 310, id(font_medium), Color(255, 255, 255), TextAlign::TOP_CENTER, "Touch: None");
+      }
+      
+      // Instructions
+      it.print(center_x, 350, id(font_small), Color(255, 255, 255), TextAlign::TOP_CENTER, "Turn knob: Adjust brightness");
+      it.print(center_x, 375, id(font_small), Color(255, 255, 255), TextAlign::TOP_CENTER, "Press button: Toggle display");
+      it.print(center_x, 400, id(font_small), Color(255, 255, 255), TextAlign::TOP_CENTER, "Touch screen: Test touch");
+
+# Touch screen configuration
+touchscreen:
+  - platform: cst816
+    id: main_touchscreen
+    display: main_display
+    on_touch:
+      - lambda: |-
+          ESP_LOGI("touch", "Touch detected at x=%d, y=%d", touch.x, touch.y);
+          id(touch_active) = true;
+          id(last_touch_x) = touch.x;
+          id(last_touch_y) = touch.y;
+    on_release:
+      - lambda: |-
+          ESP_LOGI("touch", "Touch released");
+          id(touch_active) = false;
+
+# Rotary encoder for brightness control
+sensor:
+  - platform: rotary_encoder
+    name: "Brightness Encoder"
+    id: brightness_encoder
+    pin_a: GPIO5
+    pin_b: GPIO6
+    internal: true
+    on_value:
+      - lambda: |-
+          // Calculate change from last position
+          int current = (int)x;
+          int delta = current - id(last_encoder_value);
+          id(last_encoder_value) = current;
+          
+          // Adjust brightness (step of 10 per click)
+          float new_brightness = id(display_brightness).state + (delta * 10.0);
+          
+          // Clamp to valid range
+          if (new_brightness < 0) new_brightness = 0;
+          if (new_brightness > 255) new_brightness = 255;
+          
+          // Update brightness
+          if (new_brightness != id(display_brightness).state) {
+            id(display_brightness).publish_state(new_brightness);
+            id(main_display).set_brightness((uint8_t)new_brightness);
+            ESP_LOGI("encoder", "Brightness adjusted to %.0f", new_brightness);
+          }
+
+# Hardware button
+binary_sensor:
+  - platform: gpio
+    name: "Hardware Button"
+    id: hw_button
+    pin:
+      number: GPIO0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_press:
+      - lambda: |-
+          ESP_LOGI("button", "Button pressed - toggling display");
+          // Toggle display on/off
+          static bool display_on = true;
+          display_on = !display_on;
+          if (display_on) {
+            id(main_display).set_brightness((uint8_t)id(display_brightness).state);
+          } else {
+            id(main_display).set_brightness(0);
+          }
+
+# Brightness control number (can also be adjusted from Home Assistant)
+number:
+  - platform: template
+    name: "Display Brightness"
+    id: display_brightness
+    icon: "mdi:brightness-6"
+    min_value: 0
+    max_value: 255
+    step: 5
+    initial_value: 192  # 75% default
+    optimistic: true
+    mode: slider
+    on_value:
+      - lambda: |-
+          id(main_display).set_brightness((uint8_t)x);
+          ESP_LOGI("brightness", "Brightness set to %.0f (%.0f%%)", x, (x/255.0)*100);
+
+# LCD Power (required but not user-controllable)
+# NO "name" parameter = not exposed to web interface
+output:
+  - platform: gpio
+    pin: GPIO17
+    id: lcd_power
+    inverted: false
+
+# Global variables
+globals:
+  - id: last_encoder_value
+    type: int
+    restore_value: false
+    initial_value: '0'
+  
+  - id: touch_active
+    type: bool
+    restore_value: false
+    initial_value: 'false'
+  
+  - id: last_touch_x
+    type: int
+    restore_value: false
+    initial_value: '0'
+  
+  - id: last_touch_y
+    type: int
+    restore_value: false
+    initial_value: '0'
+
+# Fonts for display
+font:
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 18
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 24
+  - file: "gfonts://Roboto"
+    id: font_title
+    size: 32
