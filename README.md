@@ -94,7 +94,7 @@ on_boot:
       gpio_set_direction(GPIO_NUM_17, GPIO_MODE_OUTPUT);
       gpio_set_level(GPIO_NUM_17, 1);
 ```
-GPIO17 powers the **entire LCD module**, not just a backlight. Must be HIGH before display initialization.
+GPIO17 powers the **entire LCD module**, not just a backlight as written in the schematics. Must be HIGH before display initialization.
 
 ---
 
@@ -114,7 +114,7 @@ GPIO17 powers the **entire LCD module**, not just a backlight. Must be HIGH befo
 
 - [ESPHome mipi_spi Docs](https://esphome.io/components/display/mipi_spi/) - Official display driver documentation
 
-- [Viewsmart GitHub] (https://github.com/VIEWESMART/UEDX46460015-MD50ESP32-1.5inch-Touch-Knob-Display/tree/main) Offocial Viewe GitHub
+- [Viewsmart GitHub] (https://github.com/VIEWESMART/UEDX46460015-MD50ESP32-1.5inch-Touch-Knob-Display/tree/main) - Offocial Viewe GitHub
 ---
 
 ## 🤝 Contributing
