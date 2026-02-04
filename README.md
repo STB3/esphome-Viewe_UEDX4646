@@ -113,7 +113,8 @@ GPIO17 powers the **entire LCD module**, not just a backlight. Must be HIGH befo
 ## 📖 Documentation
 
 - [ESPHome mipi_spi Docs](https://esphome.io/components/display/mipi_spi/) - Official display driver documentation
-- [Viewsmart GitHub] (https://github.com/VIEWESMART/UEDX46460015-MD50ESP32-1.5inch-Touch-Knob-Display/tree/main)
+
+- [Viewsmart GitHub] (https://github.com/VIEWESMART/UEDX46460015-MD50ESP32-1.5inch-Touch-Knob-Display/tree/main) Offocial Viewe GitHub
 ---
 
 ## 🤝 Contributing
